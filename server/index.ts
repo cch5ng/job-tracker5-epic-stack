@@ -18,8 +18,10 @@ import compression from 'compression'
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import getPort, { portNumbers } from 'get-port'
+import { createYoga } from 'graphql-yoga'
 import helmet from 'helmet'
 import morgan from 'morgan'
+import { schema } from './schema'
 
 installGlobals()
 
@@ -40,6 +42,18 @@ const build = await import(BUILD_PATH)
 let devBuild = build
 
 const app = express()
+
+const yoga = createYoga({ 
+	schema,
+	graphiql: {
+		defaultQuery: /* GraphQL */ `
+		  query {
+			JobById
+		  }
+		`
+	}
+})
+app.use(yoga.graphqlEndpoint, yoga)
 
 const getHost = (req: { get: (key: string) => string | undefined }) =>
 	req.get('X-Forwarded-Host') ?? req.get('host') ?? ''
@@ -256,6 +270,10 @@ ${chalk.bold('Press Ctrl+C to stop')}
 	if (MODE === 'development') {
 		broadcastDevReady(build)
 	}
+})
+
+app.listen(4000, () => {
+	console.log('Running a GraphQL API server at http://localhost:4000/graphql')
 })
 
 closeWithGrace(async () => {
