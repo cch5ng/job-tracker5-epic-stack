@@ -1,154 +1,125 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
-  //provider = "sqlite"
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id       String  @id @default(cuid())
-  email    String  @unique
-  username String  @unique
-  name     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  image       UserImage?
-  password    Password?
-  notes       Note[]
-  roles       Role[]
-  sessions    Session[]
+  id          String       @id @default(cuid())
+  email       String       @unique
+  username    String       @unique
+  name        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   connections Connection[]
+  notes       Note[]
+  password    Password?
+  sessions    Session[]
+  image       UserImage?
+  //job_user    job_user[]
+  event       event[]
+  roles       Role[]       @relation("RoleToUser")
+  jobs        job[]         @relation("job_user")
 }
 
 model Note {
-  id      String @id @default(cuid())
-  title   String
-  content String
+  id        String      @id @default(cuid())
+  title     String
+  content   String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  ownerId   String
+  owner     User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  images    NoteImage[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String
-
-  images NoteImage[]
-
-  // non-unique foreign key
   @@index([ownerId])
-  // This helps our order by in the user search a LOT
   @@index([ownerId, updatedAt])
 }
 
 model NoteImage {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   altText     String?
   contentType String
   blob        Bytes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  noteId      String
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  noteId String
-
-  // non-unique foreign key
   @@index([noteId])
 }
 
 model UserImage {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   altText     String?
   contentType String
   blob        Bytes
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Password {
-  hash String
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  hash   String
   userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Session {
   id             String   @id @default(cuid())
   expirationDate DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String
-
-  // non-unique foreign key
   @@index([userId])
 }
 
 model Permission {
-  id          String @id @default(cuid())
-  action      String // e.g. create, read, update, delete
-  entity      String // e.g. note, user, etc.
-  access      String // e.g. own or any
-  description String @default("")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  roles Role[]
+  id          String   @id @default(cuid())
+  action      String
+  entity      String
+  access      String
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  roles       Role[]   @relation("PermissionToRole")
 
   @@unique([action, entity, access])
 }
 
 model Role {
-  id          String @id @default(cuid())
-  name        String @unique
-  description String @default("")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users       User[]
-  permissions Permission[]
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String       @default("")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  permissions Permission[] @relation("PermissionToRole")
+  users       User[]       @relation("RoleToUser")
 }
 
 model Verification {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
   /// The type of verification, e.g. "email" or "phone"
-  type String
-
+  type      String
   /// The thing we're trying to verify, e.g. a user's email or phone number
-  target String
-
+  target    String
   /// The secret key used to generate the otp
-  secret String
-
+  secret    String
   /// The algorithm used to generate the otp
   algorithm String
-
   /// The number of digits in the otp
-  digits Int
-
+  digits    Int
   /// The number of seconds the otp is valid for
-  period Int
-
+  period    Int
   /// The valid characters for the otp
-  charSet String
-
+  charSet   String
   /// When it's safe to delete this verification
   expiresAt DateTime?
 
@@ -156,15 +127,62 @@ model Verification {
 }
 
 model Connection {
-  id           String @id @default(cuid())
+  id           String   @id @default(cuid())
   providerName String
   providerId   String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerName, providerId])
 }
+
+model company {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.VarChar
+  name        String  @db.VarChar(100)
+  purpose     String? @db.VarChar(255)
+  description String? @db.VarChar(255)
+  financial   String? @db.VarChar(100)
+  job         job[]
+}
+
+model event {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.VarChar
+  format      String    @db.VarChar(100)
+  contact     String?   @db.VarChar(100)
+  description String?   @db.VarChar(255)
+  notes       String?   @db.VarChar(255)
+  followup    String?   @db.VarChar(255)
+  datetime    DateTime? @db.Timestamptz(6)
+  jobid       String    @db.VarChar
+  userid      String    @db.VarChar
+  job         job       @relation(fields: [jobid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User        User      @relation(fields: [userid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model job {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.VarChar
+  name        String     @db.VarChar(100)
+  status      String?    @db.VarChar(100)
+  description String?    @db.VarChar(255)
+  url         String?    @db.VarChar(100)
+  questions   String?    @db.VarChar(255)
+  source      String?    @db.VarChar(100)
+  createdat   DateTime?  @db.Timestamptz(6)
+  companyid   String     @db.VarChar
+  //job_user    job_user[]
+    users        User[]         @relation("job_user")
+  event       event[]
+  company     company    @relation(fields: [companyid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+// model job_user {
+//   jobid  String @db.VarChar
+//   userid String
+//   job    job    @relation(fields: [jobid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "job_user_jobid_fkey")
+//   User   User   @relation(fields: [userid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "job_user_userid_fkey")
+
+//   @@id([jobid, userid], map: "job_user_pkey")
+//   @@map("_job_user")
+// }
