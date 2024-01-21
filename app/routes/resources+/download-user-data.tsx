@@ -33,6 +33,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
 					},
 				},
 			},
+			jobs: {
+				//include: {
+					select: {
+						id: true,
+						name: true,
+						status: true,
+						description: true,
+						source: true,	
+					}
+				//},
+			},
 			password: false, // <-- intentionally omit password
 			sessions: true,
 			roles: true,
@@ -56,6 +67,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 					...image,
 					url: `${domain}/resources/note-images/${image.id}`,
 				})),
+			})),
+			jobs: user.jobs.map(job => ({
+				...job,
 			})),
 		},
 	})
