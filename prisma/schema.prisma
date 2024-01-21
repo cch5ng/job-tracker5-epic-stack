@@ -19,10 +19,10 @@ model User {
   password    Password?
   sessions    Session[]
   image       UserImage?
-  //job_user    job_user[]
+  UserTojob   UserTojob[]
   event       event[]
   roles       Role[]       @relation("RoleToUser")
-  jobs        job[]         @relation("job_user")
+  jobs        job[]
 }
 
 model Note {
@@ -81,13 +81,13 @@ model Session {
 }
 
 model Permission {
-  id          String   @id @default(cuid())
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
   action      String
   entity      String
   access      String
   description String   @default("")
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
   roles       Role[]   @relation("PermissionToRole")
 
   @@unique([action, entity, access])
@@ -162,27 +162,27 @@ model event {
 }
 
 model job {
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.VarChar
-  name        String     @db.VarChar(100)
-  status      String?    @db.VarChar(100)
-  description String?    @db.VarChar(255)
-  url         String?    @db.VarChar(100)
-  questions   String?    @db.VarChar(255)
-  source      String?    @db.VarChar(100)
-  createdat   DateTime?  @db.Timestamptz(6)
-  companyid   String     @db.VarChar
-  //job_user    job_user[]
-    users        User[]         @relation("job_user")
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.VarChar
+  name        String      @db.VarChar(100)
+  status      String?     @db.VarChar(100)
+  description String?     @db.VarChar(255)
+  url         String?     @db.VarChar(100)
+  questions   String?     @db.VarChar(255)
+  source      String?     @db.VarChar(100)
+  createdat   DateTime?   @db.Timestamptz(6)
+  companyid   String      @db.VarChar
+  UserTojob   UserTojob[]
   event       event[]
-  company     company    @relation(fields: [companyid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       User[]
+  company     company     @relation(fields: [companyid], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-// model job_user {
-//   jobid  String @db.VarChar
-//   userid String
-//   job    job    @relation(fields: [jobid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "job_user_jobid_fkey")
-//   User   User   @relation(fields: [userid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "job_user_userid_fkey")
+model UserTojob {
+  B    String @db.VarChar
+  A    String
+  job  job    @relation(fields: [B], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "job_user_jobid_fkey")
+  User User   @relation(fields: [A], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "job_user_userid_fkey")
 
-//   @@id([jobid, userid], map: "job_user_pkey")
-//   @@map("_job_user")
-// }
+  @@id([B, A], map: "job_user_pkey")
+  @@map("_UserTojob")
+}
