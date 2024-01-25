@@ -19,10 +19,9 @@ model User {
   password    Password?
   sessions    Session[]
   image       UserImage?
-  UserTojob   UserTojob[]
   event       event[]
+  job         job[]
   roles       Role[]       @relation("RoleToUser")
-  jobs        job[]
 }
 
 model Note {
@@ -162,27 +161,17 @@ model event {
 }
 
 model job {
-  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.VarChar
-  name        String      @db.VarChar(100)
-  status      String?     @db.VarChar(100)
-  description String?     @db.VarChar(255)
-  url         String?     @db.VarChar(100)
-  questions   String?     @db.VarChar(255)
-  source      String?     @db.VarChar(100)
-  createdat   DateTime?   @db.Timestamptz(6)
-  companyid   String      @db.VarChar
-  UserTojob   UserTojob[]
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.VarChar
+  name        String    @db.VarChar(100)
+  status      String?   @db.VarChar(100)
+  description String?   @db.VarChar(255)
+  url         String?   @db.VarChar(100)
+  questions   String?   @db.VarChar(255)
+  source      String?   @db.VarChar(100)
+  createdat   DateTime? @db.Timestamptz(6)
+  companyid   String    @db.VarChar
+  ownerId     String?   @db.VarChar
   event       event[]
-  users       User[]
-  company     company     @relation(fields: [companyid], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model UserTojob {
-  B    String @db.VarChar
-  A    String
-  job  job    @relation(fields: [B], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "job_user_jobid_fkey")
-  User User   @relation(fields: [A], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "job_user_userid_fkey")
-
-  @@id([B, A], map: "job_user_pkey")
-  @@map("_UserTojob")
+  company     company   @relation(fields: [companyid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  User        User?     @relation(fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_id_fkey")
 }
