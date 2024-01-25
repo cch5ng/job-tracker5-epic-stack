@@ -173,5 +173,7 @@ model job {
   ownerId     String?   @db.VarChar
   event       event[]
   company     company   @relation(fields: [companyid], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  User        User?     @relation(fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_id_fkey")
+  User        User?     @relation(fields: [ownerId], references: [id], onDelete: Cascade, map: "user_id_fkey")
+
+  @@index([ownerId])
 }
