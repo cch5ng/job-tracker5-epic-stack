@@ -7,6 +7,7 @@ const prisma = new PrismaClient()
 export const schema = createSchema({
   typeDefs: /* GraphQL */ `
     type Query {
+      OwnerByUserId(username: String!): User
       JobById(id: ID!): Job
       JobsByUserId(userId: ID!): [Job]
       CompanyById(id: ID!): Company
@@ -57,10 +58,47 @@ export const schema = createSchema({
         user_id: Int
         date_time: String
     }
+
+    type User {
+      id: ID
+      email: String
+      username: String
+      name: String
+      createdAt: String
+      updatedAt: String
+      job: [Job]
+    }
   `,
 
   resolvers: {
     Query: {
+      OwnerByUserId: (_parent, _args, context: Context) => {
+        return prisma.user.findFirst({
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            image: { select: { id: true } },
+            job: { select: { id: true, name: true } },
+            notes: { select: { id: true, title: true } }
+          },
+          where: { username: _args.username },
+        })
+      
+        //invariantResponse(owner, 'Owner not found', { status: 404 })
+      
+        //return json({ owner })
+
+        // return prisma.job.findMany({
+        //     where: {
+        //       jobstracker2_users: {
+        //         some: {
+        //           user_id: parseInt(_args.userId, 10) || undefined 
+        //         }
+        //       }
+        //     },
+        // })
+      },
       JobById: (_parent, _args, context: Context) => {
           return prisma.job.findUnique({
               where: { id: parseInt(_args.id, 10) || undefined },
@@ -69,17 +107,6 @@ export const schema = createSchema({
       CompanyById: (_parent, _args, context: Context) => {
         return prisma.company.findUnique({
             where: { id: parseInt(_args.id, 10) || undefined },
-        })
-      },
-      JobsByUserId: (_parent, _args, context: Context) => {
-        return prisma.job.findMany({
-            where: {
-              jobstracker2_users: {
-                some: {
-                  user_id: parseInt(_args.userId, 10) || undefined 
-                }
-              }
-            },
         })
       },
       EventById: (_parent, _args, context: Context) => {
