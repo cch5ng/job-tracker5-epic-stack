@@ -14,7 +14,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 			name: true,
 			username: true,
 			image: { select: { id: true } },
-			jobs: { select: { id: true, name: true } },
+			job: { select: { id: true, name: true } },
 			notes: { select: { id: true, title: true } }
 
 		},
@@ -66,7 +66,7 @@ export default function JobsRoute() {
 									</NavLink>
 								</li>
 									{/*}) : null}*/}
-							{data.owner.jobs.map(note => (
+							{data.owner.job.map(note => (
 								<li key={note.id} className="p-1 pr-0">
 									<NavLink
 										to={note.id}

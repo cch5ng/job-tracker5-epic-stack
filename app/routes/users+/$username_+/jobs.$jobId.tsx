@@ -108,7 +108,7 @@ export default function JobRoute() {
 console.log('data', data)
 
 	const user = useOptionalUser()
-	//const isOwner = user?.id === data.note.ownerId
+	//const isOwner = user?.id === data.job.ownerId
 	//const canDelete = userHasPermission(
 	//	user,
 	//	isOwner ? `delete:job:own` : `delete:job:any`,
@@ -134,8 +134,30 @@ console.log('data', data)
 					))}
 				</ul> */}
 				<p className="whitespace-break-spaces text-sm md:text-lg">
+					<span className="font-semibold pr-3">Status</span>
+					{data.job.status}
+				</p>
+				<p className="whitespace-break-spaces text-sm md:text-lg">
+					<span className="font-semibold pr-3">Description</span>
 					{data.job.description}
 				</p>
+				<p className="whitespace-break-spaces text-sm md:text-lg">
+					<span className="font-semibold pr-3">Questions</span>
+					{data.job.questions}
+				</p>
+				<p className="whitespace-break-spaces text-sm md:text-lg">
+					<span className="font-semibold pr-3">URL</span>
+					{data.job.url}
+				</p>
+				<p className="whitespace-break-spaces text-sm md:text-lg">
+					<span className="font-semibold pr-3">Source</span>
+					{data.job.source}
+				</p>
+				<p className="whitespace-break-spaces md:text-sm text-slate-500">
+					<span className="font-light pr-3">Created at</span>
+					{data.job.createdat}
+				</p>
+
 			</div>
 			{/* {displayBar ? ( */}
 				<div className={floatingToolbarClassName}>
