@@ -171,9 +171,11 @@ model job {
   createdat   DateTime? @db.Timestamptz(6)
   companyid   String    @db.VarChar
   ownerId     String?   @db.VarChar
+  updatedAt   DateTime  @default(now()) @db.Timestamptz(6)
   event       event[]
   company     company   @relation(fields: [companyid], references: [id], onDelete: NoAction, onUpdate: NoAction)
   User        User?     @relation(fields: [ownerId], references: [id], onDelete: Cascade, map: "user_id_fkey")
 
   @@index([ownerId])
+  @@index([updatedAt])
 }
