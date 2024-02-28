@@ -42,6 +42,7 @@
     "/server-build"
   ],
   "dependencies": {
+    "@apollo/client": "^3.8.10",
     "@conform-to/react": "^0.9.1",
     "@conform-to/zod": "^0.9.1",
     "@epic-web/cachified": "^4.0.0",

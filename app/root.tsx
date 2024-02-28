@@ -1,3 +1,4 @@
+import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client/index'
 import { useForm } from '@conform-to/react'
 import { parse } from '@conform-to/zod'
 import { cssBundleHref } from '@remix-run/css-bundle'
@@ -91,6 +92,12 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
 		{ name: 'description', content: `Your own captain's log` },
 	]
 }
+
+const client = new ApolloClient({
+	uri: 'http://localhost:4000/graphql',
+	cache: new InMemoryCache(),
+  });
+  
 
 export async function loader({ request }: LoaderFunctionArgs) {
 	const timings = makeTimings('root loader')
@@ -290,7 +297,9 @@ function AppWithProviders() {
 	return (
 		<AuthenticityTokenProvider token={data.csrfToken}>
 			<HoneypotProvider {...data.honeyProps}>
-				<App />
+				<ApolloProvider client={client}>
+					<App />
+				</ApolloProvider>
 			</HoneypotProvider>
 		</AuthenticityTokenProvider>
 	)
