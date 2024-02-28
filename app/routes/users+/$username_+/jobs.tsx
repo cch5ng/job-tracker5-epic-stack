@@ -8,6 +8,31 @@ import { cn, getUserImgSrc } from '#app/utils/misc.tsx'
 import { useOptionalUser } from '#app/utils/user.ts'
 
 export async function loader({ params }: LoaderFunctionArgs) {
+
+	// {
+	// 	OwnerByUserId(username: "kody") {
+	// 	  createdAt
+	// 	  email
+	// 	  id
+	// 	  name
+	// 	  updatedAt
+	// 	  username
+	// 	  job {
+	// 		created_at
+	// 		description
+	// 		guid
+	// 		id
+	// 		name
+	// 		questions
+	// 		source
+	// 		status
+	// 		url
+	// 	  }
+	// 	}
+	//   }
+
+
+
 	const owner = await prisma.user.findFirst({
 		select: {
 			id: true,

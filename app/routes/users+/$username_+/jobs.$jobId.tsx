@@ -1,3 +1,4 @@
+import { useQuery, gql } from '@apollo/client/index';
 import { useForm } from '@conform-to/react'
 import { parse } from '@conform-to/zod'
 import { invariantResponse } from '@epic-web/invariant'
@@ -33,6 +34,17 @@ import {
 import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { useOptionalUser } from '#app/utils/user.ts'
 import { type loader as notesLoader } from './notes.tsx'
+
+const GET_LOCATIONS = gql`
+  query GetLocations {
+    locations {
+      id
+      name
+      description
+      photo
+    }
+  }
+`;
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	const job = await prisma.job.findUnique({
