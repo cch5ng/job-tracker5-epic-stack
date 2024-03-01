@@ -74,6 +74,7 @@ const NoteEditorSchema = z.object({
 })
 
 export async function action({ request }: ActionFunctionArgs) {
+	console.log('gets here note action')
 	const userId = await requireUserId(request)
 
 	const formData = await parseMultipartFormData(
@@ -132,6 +133,8 @@ export async function action({ request }: ActionFunctionArgs) {
 		}),
 		async: true,
 	})
+
+	console.log('submission note', submission)
 
 	if (submission.intent !== 'submit') {
 		return json({ submission } as const)

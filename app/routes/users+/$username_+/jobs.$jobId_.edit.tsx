@@ -23,12 +23,11 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 			updatedAt: true,
 		},
 		where: {
-			id: params.noteId,
+			id: params.jobId,
 			ownerId: userId,
 		},
 	})
 	invariantResponse(job, 'Not found', { status: 404 })
-	if (job) {console.log('job', job)}
 	const note = await prisma.note.findFirst({
 		select: {
 			id: true,
@@ -50,8 +49,10 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 	return json({ note: note, job: job })
 }
 
+//TODO fix
 export default function JobEdit() {
 	const data = useLoaderData<typeof loader>()
+	console.log('data from edit', data)
 
 	return <JobEditor note={data.note} job={data.job}/>
 }

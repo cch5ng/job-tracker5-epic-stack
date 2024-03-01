@@ -34,106 +34,133 @@ import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { cn, getNoteImgSrc, useIsPending } from '#app/utils/misc.tsx'
 
-const titleMinLength = 1
-const titleMaxLength = 100
-const contentMinLength = 1
-const contentMaxLength = 10000
+const nameMinLength = 1
+const nameMaxLength = 100
+const descriptionMinLength = 1
+const descriptionMaxLength = 10000
+const sourceMinLength = 1
+const sourceMaxLength = 100
+const statusMinLength = 1
+const statusMaxLength = 10000
 
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 3 // 3MB
 
-const ImageFieldsetSchema = z.object({
+// const ImageFieldsetSchema = z.object({
+// 	id: z.string().optional(),
+// 	file: z
+// 		.instanceof(File)
+// 		.optional()
+// 		.refine(file => {
+// 			return !file || file.size <= MAX_UPLOAD_SIZE
+// 		}, 'File size must be less than 3MB'),
+// 	altText: z.string().optional(),
+// })
+
+//type ImageFieldset = z.infer<typeof ImageFieldsetSchema>
+
+// function imageHasFile(
+// 	image: ImageFieldset,
+// ): image is ImageFieldset & { file: NonNullable<ImageFieldset['file']> } {
+// 	return Boolean(image.file?.size && image.file?.size > 0)
+// }
+
+// function imageHasId(
+// 	image: ImageFieldset,
+// ): image is ImageFieldset & { id: NonNullable<ImageFieldset['id']> } {
+// 	return image.id != null
+// }
+
+const JobEditorSchema = z.object({
 	id: z.string().optional(),
-	file: z
-		.instanceof(File)
-		.optional()
-		.refine(file => {
-			return !file || file.size <= MAX_UPLOAD_SIZE
-		}, 'File size must be less than 3MB'),
-	altText: z.string().optional(),
+	name: z.string().min(nameMinLength).max(nameMaxLength),
+	description: z.string().min(descriptionMinLength).max(descriptionMaxLength),
+	questions: z.string().optional(),
+	source: z.string().min(sourceMinLength).max(sourceMaxLength),
+	status: z.string().min(statusMinLength).max(statusMaxLength),
+	updatedAt: z.string(),
+	url: z.string().optional(),
 })
 
-type ImageFieldset = z.infer<typeof ImageFieldsetSchema>
-
-function imageHasFile(
-	image: ImageFieldset,
-): image is ImageFieldset & { file: NonNullable<ImageFieldset['file']> } {
-	return Boolean(image.file?.size && image.file?.size > 0)
-}
-
-function imageHasId(
-	image: ImageFieldset,
-): image is ImageFieldset & { id: NonNullable<ImageFieldset['id']> } {
-	return image.id != null
-}
 
 //TODO UPDATE
-const NoteEditorSchema = z.object({
-	id: z.string().optional(),
-	title: z.string().min(titleMinLength).max(titleMaxLength),
-	content: z.string().min(contentMinLength).max(contentMaxLength),
-	images: z.array(ImageFieldsetSchema).max(5).optional(),
-})
+// const NoteEditorSchema = z.object({
+// 	id: z.string().optional(),
+// 	title: z.string(),
+// 	content: z.string(),
+// 	images: z.array(ImageFieldsetSchema).max(5).optional(),
+// })
 
 export async function action({ request }: ActionFunctionArgs) {
+	console.log('gets here job action')
 	const userId = await requireUserId(request)
+	console.log('userId', userId)
 
 	const formData = await parseMultipartFormData(
 		request,
 		createMemoryUploadHandler({ maxPartSize: MAX_UPLOAD_SIZE }),
 	)
+	console.log('formData', formData)
+
 	await validateCSRF(formData, request.headers)
+
 
 	//TODO UPDATE
 	const submission = await parse(formData, {
-		schema: NoteEditorSchema.superRefine(async (data, ctx) => {
+		schema: JobEditorSchema.superRefine(async (data, ctx) => {
+			console.log('id', data.id)
+
 			if (!data.id) return
 
-			const note = await prisma.note.findUnique({
+			const job = await prisma.job.findUnique({
 				select: { id: true },
 				where: { id: data.id, ownerId: userId },
 			})
-			if (!note) {
+
+			console.log('job from job editor submission', job)
+			if (!job) {
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
-					message: 'Note not found',
+					message: 'Job not found',
 				})
 			}
 		}).transform(async ({ images = [], ...data }) => {
 			return {
 				...data,
-				imageUpdates: await Promise.all(
-					images.filter(imageHasId).map(async i => {
-						if (imageHasFile(i)) {
-							return {
-								id: i.id,
-								altText: i.altText,
-								contentType: i.file.type,
-								blob: Buffer.from(await i.file.arrayBuffer()),
-							}
-						} else {
-							return {
-								id: i.id,
-								altText: i.altText,
-							}
-						}
-					}),
-				),
-				newImages: await Promise.all(
-					images
-						.filter(imageHasFile)
-						.filter(i => !i.id)
-						.map(async image => {
-							return {
-								altText: image.altText,
-								contentType: image.file.type,
-								blob: Buffer.from(await image.file.arrayBuffer()),
-							}
-						}),
-				),
+				// imageUpdates: await Promise.all(
+				// 	images.filter(imageHasId).map(async i => {
+				// 		if (imageHasFile(i)) {
+				// 			return {
+				// 				id: i.id,
+				// 				altText: i.altText,
+				// 				contentType: i.file.type,
+				// 				blob: Buffer.from(await i.file.arrayBuffer()),
+				// 			}
+				// 		} else {
+				// 			return {
+				// 				id: i.id,
+				// 				altText: i.altText,
+				// 			}
+				// 		}
+				// 	}),
+				// ),
+				// newImages: await Promise.all(
+				// 	images
+				// 		.filter(imageHasFile)
+				// 		.filter(i => !i.id)
+				// 		.map(async image => {
+				// 			return {
+				// 				altText: image.altText,
+				// 				contentType: image.file.type,
+				// 				blob: Buffer.from(await image.file.arrayBuffer()),
+				// 			}
+				// 		}),
+				// ),
 			}
 		}),
 		async: true,
 	})
+
+	console.log('job submission', submission)
 
 	if (submission.intent !== 'submit') {
 		return json({ submission } as const)
@@ -144,40 +171,40 @@ export async function action({ request }: ActionFunctionArgs) {
 	}
 
 	//TODO UPDATE
+	console.log('submission.value', submission.value)
+
 	const {
-		id: noteId,
-		title,
-		content,
-		imageUpdates = [],
-		newImages = [],
+		id: jobId, //noteId,
+		name,
+		questions,
+		source,
+		url,
+		updatedAt,
 	} = submission.value
 
-	//TODO UPDATE
-	const updatedNote = await prisma.note.upsert({
+	//TODO UPDATE fix
+	const updatedJob = await prisma.job.upsert({
 		select: { id: true, owner: { select: { username: true } } },
-		where: { id: noteId ?? '__new_note__' },
+		where: { id: jobId ?? '__new_job__' },
 		create: {
 			ownerId: userId,
-			title,
-			content,
-			images: { create: newImages },
+			name,
+			questions,
+			source,
+			url,
+			updatedAt,
 		},
 		update: {
-			title,
-			content,
-			images: {
-				deleteMany: { id: { notIn: imageUpdates.map(i => i.id) } },
-				updateMany: imageUpdates.map(updates => ({
-					where: { id: updates.id },
-					data: { ...updates, id: updates.blob ? cuid() : updates.id },
-				})),
-				create: newImages,
-			},
+			name,
+			questions,
+			source,
+			url,
+			updatedAt,
 		},
 	})
 
 	return redirect(
-		`/users/${updatedNote.owner.username}/notes/${updatedNote.id}`,
+		`/users/${updatedJob.ownerId}/jobs/${updatedJob.id}`,
 	)
 }
 
@@ -199,12 +226,14 @@ export function JobEditor({
 	const actionData = useActionData<typeof action>()
 	const isPending = useIsPending()
 
+	console.log('actionData', actionData)
+
 	const [form, fields] = useForm({
 		id: 'job-editor',
-		constraint: getFieldsetConstraint(NoteEditorSchema),
+		constraint: getFieldsetConstraint(JobEditorSchema),
 		lastSubmission: actionData?.submission,
 		onValidate({ formData }) {
-			return parse(formData, { schema: NoteEditorSchema })
+			return parse(formData, { schema: JobEditorSchema })
 		},
 		defaultValue: {
 			description: job?.description ?? '',
@@ -220,6 +249,11 @@ export function JobEditor({
 			//images: note?.images ?? [{}],
 		},
 	})
+
+	console.log('form', form)
+	console.log('form onSubmit', form.props.onSubmit)
+	console.log('fields', fields)
+
 	//const imageList = useFieldList(form.ref, fields.images)
 
 	return (
@@ -317,110 +351,110 @@ export function JobEditor({
 	)
 }
 
-function ImageChooser({
-	config,
-}: {
-	config: FieldConfig<z.infer<typeof ImageFieldsetSchema>>
-}) {
-	const ref = useRef<HTMLFieldSetElement>(null)
-	const fields = useFieldset(ref, config)
-	const existingImage = Boolean(fields.id.defaultValue)
-	const [previewImage, setPreviewImage] = useState<string | null>(
-		fields.id.defaultValue ? getNoteImgSrc(fields.id.defaultValue) : null,
-	)
-	const [altText, setAltText] = useState(fields.altText.defaultValue ?? '')
+// function ImageChooser({
+// 	config,
+// }: {
+// 	config: FieldConfig<z.infer<typeof ImageFieldsetSchema>>
+// }) {
+// 	const ref = useRef<HTMLFieldSetElement>(null)
+// 	const fields = useFieldset(ref, config)
+// 	const existingImage = Boolean(fields.id.defaultValue)
+// 	const [previewImage, setPreviewImage] = useState<string | null>(
+// 		fields.id.defaultValue ? getNoteImgSrc(fields.id.defaultValue) : null,
+// 	)
+// 	const [altText, setAltText] = useState(fields.altText.defaultValue ?? '')
 
-	return (
-		<fieldset
-			ref={ref}
-			aria-invalid={Boolean(config.errors?.length) || undefined}
-			aria-describedby={config.errors?.length ? config.errorId : undefined}
-		>
-			<div className="flex gap-3">
-				<div className="w-32">
-					<div className="relative h-32 w-32">
-						<label
-							htmlFor={fields.file.id}
-							className={cn('group absolute h-32 w-32 rounded-lg', {
-								'bg-accent opacity-40 focus-within:opacity-100 hover:opacity-100':
-									!previewImage,
-								'cursor-pointer focus-within:ring-2': !existingImage,
-							})}
-						>
-							{previewImage ? (
-								<div className="relative">
-									<img
-										src={previewImage}
-										alt={altText ?? ''}
-										className="h-32 w-32 rounded-lg object-cover"
-									/>
-									{existingImage ? null : (
-										<div className="pointer-events-none absolute -right-0.5 -top-0.5 rotate-12 rounded-sm bg-secondary px-2 py-1 text-xs text-secondary-foreground shadow-md">
-											new
-										</div>
-									)}
-								</div>
-							) : (
-								<div className="flex h-32 w-32 items-center justify-center rounded-lg border border-muted-foreground text-4xl text-muted-foreground">
-									<Icon name="plus" />
-								</div>
-							)}
-							{existingImage ? (
-								<input
-									{...conform.input(fields.id, {
-										type: 'hidden',
-										ariaAttributes: true,
-									})}
-								/>
-							) : null}
-							<input
-								aria-label="Image"
-								className="absolute left-0 top-0 z-0 h-32 w-32 cursor-pointer opacity-0"
-								onChange={event => {
-									const file = event.target.files?.[0]
+// 	return (
+// 		<fieldset
+// 			ref={ref}
+// 			aria-invalid={Boolean(config.errors?.length) || undefined}
+// 			aria-describedby={config.errors?.length ? config.errorId : undefined}
+// 		>
+// 			<div className="flex gap-3">
+// 				<div className="w-32">
+// 					<div className="relative h-32 w-32">
+// 						<label
+// 							htmlFor={fields.file.id}
+// 							className={cn('group absolute h-32 w-32 rounded-lg', {
+// 								'bg-accent opacity-40 focus-within:opacity-100 hover:opacity-100':
+// 									!previewImage,
+// 								'cursor-pointer focus-within:ring-2': !existingImage,
+// 							})}
+// 						>
+// 							{previewImage ? (
+// 								<div className="relative">
+// 									<img
+// 										src={previewImage}
+// 										alt={altText ?? ''}
+// 										className="h-32 w-32 rounded-lg object-cover"
+// 									/>
+// 									{existingImage ? null : (
+// 										<div className="pointer-events-none absolute -right-0.5 -top-0.5 rotate-12 rounded-sm bg-secondary px-2 py-1 text-xs text-secondary-foreground shadow-md">
+// 											new
+// 										</div>
+// 									)}
+// 								</div>
+// 							) : (
+// 								<div className="flex h-32 w-32 items-center justify-center rounded-lg border border-muted-foreground text-4xl text-muted-foreground">
+// 									<Icon name="plus" />
+// 								</div>
+// 							)}
+// 							{existingImage ? (
+// 								<input
+// 									{...conform.input(fields.id, {
+// 										type: 'hidden',
+// 										ariaAttributes: true,
+// 									})}
+// 								/>
+// 							) : null}
+// 							<input
+// 								aria-label="Image"
+// 								className="absolute left-0 top-0 z-0 h-32 w-32 cursor-pointer opacity-0"
+// 								onChange={event => {
+// 									const file = event.target.files?.[0]
 
-									if (file) {
-										const reader = new FileReader()
-										reader.onloadend = () => {
-											setPreviewImage(reader.result as string)
-										}
-										reader.readAsDataURL(file)
-									} else {
-										setPreviewImage(null)
-									}
-								}}
-								accept="image/*"
-								{...conform.input(fields.file, {
-									type: 'file',
-									ariaAttributes: true,
-								})}
-							/>
-						</label>
-					</div>
-					<div className="min-h-[32px] px-4 pb-3 pt-1">
-						<ErrorList id={fields.file.errorId} errors={fields.file.errors} />
-					</div>
-				</div>
-				<div className="flex-1">
-					<Label htmlFor={fields.altText.id}>Alt Text</Label>
-					<Textarea
-						onChange={e => setAltText(e.currentTarget.value)}
-						{...conform.textarea(fields.altText, { ariaAttributes: true })}
-					/>
-					<div className="min-h-[32px] px-4 pb-3 pt-1">
-						<ErrorList
-							id={fields.altText.errorId}
-							errors={fields.altText.errors}
-						/>
-					</div>
-				</div>
-			</div>
-			<div className="min-h-[32px] px-4 pb-3 pt-1">
-				<ErrorList id={config.errorId} errors={config.errors} />
-			</div>
-		</fieldset>
-	)
-}
+// 									if (file) {
+// 										const reader = new FileReader()
+// 										reader.onloadend = () => {
+// 											setPreviewImage(reader.result as string)
+// 										}
+// 										reader.readAsDataURL(file)
+// 									} else {
+// 										setPreviewImage(null)
+// 									}
+// 								}}
+// 								accept="image/*"
+// 								{...conform.input(fields.file, {
+// 									type: 'file',
+// 									ariaAttributes: true,
+// 								})}
+// 							/>
+// 						</label>
+// 					</div>
+// 					<div className="min-h-[32px] px-4 pb-3 pt-1">
+// 						<ErrorList id={fields.file.errorId} errors={fields.file.errors} />
+// 					</div>
+// 				</div>
+// 				<div className="flex-1">
+// 					<Label htmlFor={fields.altText.id}>Alt Text</Label>
+// 					<Textarea
+// 						onChange={e => setAltText(e.currentTarget.value)}
+// 						{...conform.textarea(fields.altText, { ariaAttributes: true })}
+// 					/>
+// 					<div className="min-h-[32px] px-4 pb-3 pt-1">
+// 						<ErrorList
+// 							id={fields.altText.errorId}
+// 							errors={fields.altText.errors}
+// 						/>
+// 					</div>
+// 				</div>
+// 			</div>
+// 			<div className="min-h-[32px] px-4 pb-3 pt-1">
+// 				<ErrorList id={config.errorId} errors={config.errors} />
+// 			</div>
+// 		</fieldset>
+// 	)
+// }
 
 //TODO fix
 export function ErrorBoundary() {
@@ -428,7 +462,7 @@ export function ErrorBoundary() {
 		<GeneralErrorBoundary
 			statusHandlers={{
 				404: ({ params }) => (
-					<p>No job with the id "{params.noteId}" exists</p>
+					<p>No job with the id "{params.jobId}" exists</p>
 				),
 			}}
 		/>
